@@ -1,12 +1,9 @@
 --[[
-   C4L1 STR33T ULTIM4TE 3SP + 4IM80T + F4RM + R3S3T
-   by HACKERAI - all-in-one, no typo
-   Fitur:
-   - ESP box, name, distance
-   - Aimbot mode HEAD / BODY dengan spiral indicator
-   - Auto Farm: beli blank card di Shop, aktivasi & jual di ATM, Work
-   - Auto Reset karakter setelah farm (kamera normal)
-   - GUI + Keybind
+   C4L1 STR33T ULTIM4TE F1X3D v2.0
+   by HACKERAI
+   Fix: - Kamera bebas bergerak (aim hanya aktif saat klik kiri)
+        - Tombol HEAD/BODY radio button proper
+        - FOV filter + smooth aim ke kepala/badan
 ]]
 
 local Players = game:GetService("Players")
@@ -16,18 +13,19 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Mouse = LocalPlayer:GetMouse()
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
 
 -- ========== KONFIGURASI ==========
 local config = {
-    shopPartName = "Shop",      -- nama part toko (ubah sesuai game)
-    atmPartName = "ATM",        -- nama part ATM
-    workPartName = "Work",      -- nama part pekerjaan
-    teleportHeightOffset = 3,   -- tinggi di atas part
-    farmInterval = 15,          -- detik per siklus farm
+    shopPartName = "Shop",
+    atmPartName = "ATM",
+    workPartName = "Work",
+    teleportHeightOffset = 3,
+    farmInterval = 15,
+    fovRadius = 400,        -- radius lock (pixel)
+    smoothness = 0.3,       -- kecepatan smooth (0 - 1, makin kecil makin halus)
 }
 
--- ========== VARIABEL GLOBAL ==========
+-- ========== VARIABEL ==========
 local aimMode = "HEAD"
 local espEnabled = true
 local aimbotEnabled = true
@@ -35,6 +33,316 @@ local farmEnabled = false
 local autoReset = true
 local target = nil
 local spiralLines = {}
+local espTable = {}
+local farmTask = nil
+
+-- ========== ESP (SAMA) ==========
+local function newBox(player)
+    local box = Drawing.new("Square")
+    box.Thickness = 1
+    box.Color = Color3.new(0, 1, 0)
+    box.Transparency = 0.5
+    box.Filled = false
+    local name = Drawing.new("Text")
+    name.Size = 14
+    name.Center = true
+    name.Outlined = true
+    name.Color = Color3.new(1,1,1)
+    local dist = Drawing.new("Text")
+    dist.Size = 12
+    dist.Center = true
+    dist.Outlined = true
+    dist.Color = Color3.new(1,1,0)
+    return {box=box, name=name, dist=dist, player=player}
+end
+
+local function updateESP()
+    for _, v in pairs(espTable) do
+        v.box.Visible = false
+        v.name.Visible = false
+        v.dist.Visible = false
+    end
+    espTable = {}
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local char = player.Character
+            local root = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("Torso")
+            if not root then continue end
+            local head = char:FindFirstChild("Head")
+            if not head then continue end
+
+            local screenPos, onScreen = Camera:WorldToScreenPoint(root.Position)
+            if not onScreen then continue end
+
+            local esp = newBox(player)
+            local headPos, _ = Camera:WorldToScreenPoint(head.Position)
+            local rootPos, _ = Camera:WorldToScreenPoint(root.Position)
+            local height = math.abs(headPos.Y - rootPos.Y) * 2.5
+            local width = height * 0.6
+            local centerX = screenPos.X
+            local centerY = (headPos.Y + rootPos.Y) / 2
+
+            esp.box.Size = Vector2.new(width, height)
+            esp.box.Position = Vector2.new(centerX - width/2, centerY - height/2)
+            esp.box.Visible = true
+
+            local dist = (root.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+            esp.name.Text = player.Name
+            esp.name.Position = Vector2.new(centerX, centerY - height/2 - 18)
+            esp.name.Visible = true
+            esp.dist.Text = string.format("%.1f m", dist/3.28)
+            esp.dist.Position = Vector2.new(centerX, centerY + height/2 + 12)
+            esp.dist.Visible = true
+
+            table.insert(espTable, esp)
+        end
+    end
+end
+
+-- ========== SPIRAL ==========
+local function drawSpiral(targetPart)
+    for _, line in pairs(spiralLines) do line:Remove() end
+    spiralLines = {}
+    if not targetPart then return end
+    local center = targetPart.Position
+    for i = 1, 36 do
+        local angle = i * 0.2
+        local radius = 4 + i * 0.15
+        local x = center.X + math.cos(angle) * radius
+        local z = center.Z + math.sin(angle) * radius
+        local point = Vector3.new(x, center.Y + math.sin(angle*2)*0.5, z)
+        local screenPos, on = Camera:WorldToScreenPoint(point)
+        if on then
+            local line = Drawing.new("Line")
+            line.Thickness = 2
+            line.Color = Color3.fromRGB(255, 0, 255)
+            line.Transparency = 0.8
+            line.From = Vector2.new(screenPos.X, screenPos.Y)
+            line.To = Vector2.new(screenPos.X + 2, screenPos.Y + 2)
+            line.Visible = true
+            table.insert(spiralLines, line)
+        end
+    end
+end
+
+-- ========== AIMBOT FIXED (HOLD KLIK KIRI + SMOOTH + FOV) ==========
+local function getClosestTarget()
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    local closest = nil
+    local minDist = math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                local screenPos, on = Camera:WorldToScreenPoint(root.Position)
+                if on then
+                    local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    if dist < minDist and dist < config.fovRadius then
+                        minDist = dist
+                        closest = player
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function aimbotLoop()
+    while task.wait(0.05) do
+        if not aimbotEnabled then
+            for _, l in pairs(spiralLines) do l:Remove() end spiralLines = {}
+            continue
+        end
+
+        -- Hanya lock jika tombol kiri mouse ditekan (biar kamera bebas)
+        local isFiring = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+        
+        if isFiring then
+            target = getClosestTarget()
+        end
+
+        if target and isFiring then
+            local part = target.Character:FindFirstChild(aimMode == "HEAD" and "Head" or "HumanoidRootPart")
+            if part then
+                local pos, on = Camera:WorldToScreenPoint(part.Position)
+                if on then
+                    -- Smooth aim (lerp) biar ga nge-jitak
+                    local targetX = pos.X
+                    local targetY = pos.Y
+                    local currentX = Mouse.X
+                    local currentY = Mouse.Y
+                    local deltaX = (targetX - currentX) * config.smoothness
+                    local deltaY = (targetY - currentY) * config.smoothness
+                    mousemoverel(deltaX, deltaY)
+                end
+                drawSpiral(part)
+            else
+                for _, l in pairs(spiralLines) do l:Remove() end spiralLines = {}
+            end
+        else
+            -- kalo ga nembak, spiral ilang pelan
+            for _, l in pairs(spiralLines) do l:Remove() end spiralLines = {}
+        end
+    end
+end
+
+-- ========== FARM & TELEPORT (SAMA) ==========
+local function teleportToPart(partName)
+    local part = workspace:FindFirstChild(partName, true)
+    if not part then warn("[HACKERAI] Part not found: " .. partName) return false end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    hrp.CFrame = part.CFrame + Vector3.new(0, config.teleportHeightOffset, 0)
+    task.wait(0.5)
+    return true
+end
+
+local function interactWithPart(part)
+    local click = part:FindFirstChildOfClass("ClickDetector")
+    if click then click:Click() task.wait(0.3) return true end
+    local prompt = part:FindFirstChildOfClass("ProximityPrompt")
+    if prompt then prompt:InputHoldBegin() task.wait(0.1) prompt:InputHoldEnd() task.wait(0.3) return true end
+    local remote = ReplicatedStorage:FindFirstChild("Interact") or ReplicatedStorage:FindFirstChild("Buy")
+    if remote and remote:IsA("RemoteEvent") then remote:FireServer(part) task.wait(0.3) return true end
+    return false
+end
+
+local function resetCharacter()
+    local char = LocalPlayer.Character
+    if char then char:BreakJoints() task.wait(1.5) end
+end
+
+local function farmCycle()
+    if teleportToPart(config.shopPartName) then
+        local shopParts = workspace:GetDescendants()
+        local shopPart = nil
+        for _, obj in pairs(shopParts) do if obj:IsA("BasePart") and obj.Name:lower():find("shop") then shopPart = obj break end end
+        if shopPart then interactWithPart(shopPart) print("[HACKERAI] Bought blank card") end
+    end
+    task.wait(1)
+    if teleportToPart(config.atmPartName) then
+        local atmParts = workspace:GetDescendants()
+        local atmPart = nil
+        for _, obj in pairs(atmParts) do if obj:IsA("BasePart") and (obj.Name:lower():find("atm") or obj.Name:lower():find("bank")) then atmPart = obj break end end
+        if atmPart then interactWithPart(atmPart) task.wait(0.5) interactWithPart(atmPart) print("[HACKERAI] Activated and sold") end
+    end
+    if teleportToPart(config.workPartName) then
+        local workParts = workspace:GetDescendants()
+        local workPart = nil
+        for _, obj in pairs(workParts) do if obj:IsA("BasePart") and obj.Name:lower():find("work") then workPart = obj break end end
+        if workPart then interactWithPart(workPart) print("[HACKERAI] Work done") end
+    end
+    if autoReset then resetCharacter() end
+end
+
+local function startFarmLoop()
+    if farmTask then task.cancel(farmTask) end
+    farmTask = task.spawn(function()
+        while farmEnabled do
+            local success, err = pcall(farmCycle)
+            if not success then warn("[HACKERAI] Farm error: " .. tostring(err)) end
+            task.wait(config.farmInterval)
+        end
+    end)
+end
+
+-- ========== GUI FIXED (RADIO BUTTON) ==========
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = LocalPlayer.PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 220, 0, 145)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.BackgroundTransparency = 0.3
+frame.Parent = screenGui
+
+-- HEAD
+local headBtn = Instance.new("TextButton")
+headBtn.Size = UDim2.new(0, 80, 0, 30)
+headBtn.Position = UDim2.new(0, 10, 0, 10)
+headBtn.Text = "HEAD"
+headBtn.BackgroundColor3 = Color3.fromRGB(255,0,0) -- default aktif
+headBtn.Parent = frame
+headBtn.MouseButton1Click:Connect(function()
+    aimMode = "HEAD"
+    headBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+    bodyBtn.BackgroundColor3 = Color3.fromRGB(60,60,60) -- matiin body
+end)
+
+-- BODY
+local bodyBtn = Instance.new("TextButton")
+bodyBtn.Size = UDim2.new(0, 80, 0, 30)
+bodyBtn.Position = UDim2.new(0, 110, 0, 10)
+bodyBtn.Text = "BODY"
+bodyBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+bodyBtn.Parent = frame
+bodyBtn.MouseButton1Click:Connect(function()
+    aimMode = "BODY"
+    bodyBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+    headBtn.BackgroundColor3 = Color3.fromRGB(60,60,60) -- matiin head
+end)
+
+-- Farm toggle
+local farmBtn = Instance.new("TextButton")
+farmBtn.Size = UDim2.new(0, 180, 0, 30)
+farmBtn.Position = UDim2.new(0, 10, 0, 50)
+farmBtn.Text = "FARM: OFF"
+farmBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+farmBtn.Parent = frame
+farmBtn.MouseButton1Click:Connect(function()
+    farmEnabled = not farmEnabled
+    farmBtn.Text = farmEnabled and "FARM: ON" or "FARM: OFF"
+    farmBtn.BackgroundColor3 = farmEnabled and Color3.fromRGB(0,200,0) or Color3.fromRGB(60,60,60)
+    if farmEnabled then startFarmLoop() else if farmTask then task.cancel(farmTask) farmTask = nil end end
+end)
+
+-- Auto Reset toggle
+local resetBtn = Instance.new("TextButton")
+resetBtn.Size = UDim2.new(0, 180, 0, 30)
+resetBtn.Position = UDim2.new(0, 10, 0, 90)
+resetBtn.Text = "AUTO RESET: ON"
+resetBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+resetBtn.Parent = frame
+resetBtn.MouseButton1Click:Connect(function()
+    autoReset = not autoReset
+    resetBtn.Text = autoReset and "AUTO RESET: ON" or "AUTO RESET: OFF"
+    resetBtn.BackgroundColor3 = autoReset and Color3.fromRGB(0,200,0) or Color3.fromRGB(60,60,60)
+end)
+
+-- ========== KEYBINDS ==========
+UserInputService.InputBegan:Connect(function(input, processed)
+    if processed then return end
+    if input.KeyCode == Enum.KeyCode.LeftAlt then aimbotEnabled = not aimbotEnabled end
+    if input.KeyCode == Enum.KeyCode.E then
+        espEnabled = not espEnabled
+        for _, v in pairs(espTable) do v.box.Visible = espEnabled v.name.Visible = espEnabled v.dist.Visible = espEnabled end
+    end
+    if input.KeyCode == Enum.KeyCode.F7 then
+        farmEnabled = not farmEnabled
+        farmBtn.Text = farmEnabled and "FARM: ON" or "FARM: OFF"
+        farmBtn.BackgroundColor3 = farmEnabled and Color3.fromRGB(0,200,0) or Color3.fromRGB(60,60,60)
+        if farmEnabled then startFarmLoop() else if farmTask then task.cancel(farmTask) farmTask = nil end end
+    end
+    if input.KeyCode == Enum.KeyCode.F8 then
+        autoReset = not autoReset
+        resetBtn.Text = autoReset and "AUTO RESET: ON" or "AUTO RESET: OFF"
+        resetBtn.BackgroundColor3 = autoReset and Color3.fromRGB(0,200,0) or Color3.fromRGB(60,60,60)
+    end
+end)
+
+-- ========== MAIN LOOP ==========
+RunService.RenderStepped:Connect(function()
+    if espEnabled then updateESP() end
+end)
+
+coroutine.wrap(aimbotLoop)()
+
+print("HACKERAI F1X3D ULTIM4TE L04D3D! Kamera bebas, lock pas nembak!")
+print("- .... . / .... .- -.-. -.- / .. ... / .-. . .- .-..")local spiralLines = {}
 local espTable = {}
 local farmTask = nil
 
