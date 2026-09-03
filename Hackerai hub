@@ -1,11 +1,12 @@
 --[[
-   C4L1 STR33T ULTIM4TE v8.1 - FULL HP SUPPORT (no F9)
+   C4L1 STR33T ULTIM4TE v8.2 - FINAL HP + KEY DARI WEBSITE
    by HACKERAI
-   Key: 17 karakter alfanumerik dari website Get Key
-   FOV HEAD=134 | BODY=90
-   AIMLOCK toggle di GUI (untuk HP)
-   Speed max 24 (tombol +/-)
-   Auto Reset dihapus
+   - Key: 17 karakter alfanumerik dari website Get Key
+   - FOV HEAD=134 | BODY=90
+   - AIMLOCK toggle (ON/OFF) buat HP
+   - Speed max 24 (tombol +/-)
+   - Auto Reset dihapus
+   - Semua tombol di GUI bisa disentuh
 ]]
 
 local Players = game:GetService("Players")
@@ -28,7 +29,7 @@ local config = {
     smoothAim = 0.05,
     fovHead = 134,
     fovBody = 90,
-    autoFire = false, -- selalu false untuk HP
+    autoFire = false,
     maxSpeed = 24,
     defaultSpeed = 16,
 }
@@ -37,7 +38,7 @@ local config = {
 local aimMode = "HEAD"
 local espEnabled = true
 local aimbotEnabled = true
-local aimlockActive = false   -- untuk HP toggle
+local aimlockActive = false
 local farmEnabled = false
 local currentSpeed = config.defaultSpeed
 local target = nil
@@ -182,7 +183,6 @@ local function aimbotLoop()
             continue
         end
 
-        -- HP mode: hanya aktif jika aimlockActive = true
         local active = aimlockActive
 
         if active then
@@ -397,7 +397,7 @@ local function createMainGUI()
         speedLabel.Text = "Speed: " .. currentSpeed
     end)
 
-    -- Hide/Show GUI (pengganti F9)
+    -- Hide/Show GUI
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(0, 200, 0, 45)
     toggleBtn.Position = UDim2.new(0, 10, 0, 240)
@@ -410,7 +410,7 @@ local function createMainGUI()
         toggleBtn.Text = mainGui.Enabled and "HIDE GUI" or "SHOW GUI"
     end)
 
-    -- Info kecil
+    -- Info
     local infoLabel = Instance.new("TextLabel")
     infoLabel.Size = UDim2.new(0, 280, 0, 20)
     infoLabel.Position = UDim2.new(0, 10, 0, 290)
@@ -488,11 +488,9 @@ local function showKeyGUI()
     end)
 end
 
--- ========== KEYBINDS (HANYA UNTUK PC, TAPI TIDAK WAJIB) ==========
--- Kita tetap sertakan untuk fleksibilitas, tapi fokus utama HP adalah GUI
+-- ========== KEYBINDS (PC opsional) ==========
 UserInputService.InputBegan:Connect(function(input, processed)
     if processed then return end
-    -- F9 diganti fungsi toggle via GUI, jadi F9 tidak dipakai
     if input.KeyCode == Enum.KeyCode.LeftAlt then
         aimbotEnabled = not aimbotEnabled
         print("[HACKERAI] Aimbot: " .. (aimbotEnabled and "ON" or "OFF"))
@@ -529,5 +527,5 @@ task.wait(1)
 setSpeed(currentSpeed)
 
 showKeyGUI()
-print("HACKERAI v8.1 FULL HP SUPPORT LOADED - Gunakan AIMLOCK toggle di GUI.")
+print("HACKERAI v8.2 FINAL HP - AIMLOCK toggle di GUI.")
 print("- .... . / .... .- -.-. -.- / .. ... / .-. . .- .-..")
