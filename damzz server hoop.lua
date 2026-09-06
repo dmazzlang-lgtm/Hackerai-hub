@@ -1,5 +1,378 @@
---[[
-    ╔══════════════════════════════════════╗
+--========================================--
+--        ADAM GANTENG LOADING SCREEN
+--========================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+pcall(function()
+    CoreGui:FindFirstChild("AdamGantengLoading"):Destroy()
+end)
+
+local LoadingGui = Instance.new("ScreenGui")
+LoadingGui.Name = "AdamGantengLoading"
+LoadingGui.IgnoreGuiInset = true
+LoadingGui.ResetOnSpawn = false
+LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+LoadingGui.Parent = CoreGui
+
+-- Background gelap
+local Background = Instance.new("Frame")
+Background.Size = UDim2.fromScale(1, 1)
+Background.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
+Background.BorderSizePixel = 0
+Background.Parent = LoadingGui
+
+-- Kotak utama
+local Box = Instance.new("Frame")
+Box.Size = UDim2.new(0, 420, 0, 230)
+Box.Position = UDim2.new(0.5, -210, 0.5, -115)
+Box.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+Box.BorderSizePixel = 0
+Box.Parent = Background
+
+Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 18)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(120, 70, 255)
+Stroke.Thickness = 1.5
+Stroke.Transparency = 0.25
+Stroke.Parent = Box
+
+-- Judul
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Position = UDim2.new(0, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "ADAM GANTENG"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 27
+Title.TextColor3 = Color3.fromRGB(245, 245, 255)
+Title.Parent = Box
+
+-- Subtitle
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, 0, 0, 25)
+Subtitle.Position = UDim2.new(0, 0, 0, 73)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "SERVER HOP • SAEG"
+Subtitle.Font = Enum.Font.GothamMedium
+Subtitle.TextSize = 12
+Subtitle.TextColor3 = Color3.fromRGB(155, 120, 255)
+Subtitle.Parent = Box
+
+-- Status loading
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -60, 0, 25)
+Status.Position = UDim2.new(0, 30, 0, 115)
+Status.BackgroundTransparency = 1
+Status.Text = "Memulai sistem..."
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 13
+Status.TextColor3 = Color3.fromRGB(180, 180, 195)
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Box
+
+-- Progress background
+local BarBackground = Instance.new("Frame")
+BarBackground.Size = UDim2.new(1, -60, 0, 12)
+BarBackground.Position = UDim2.new(0, 30, 0, 148)
+BarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+BarBackground.BorderSizePixel = 0
+BarBackground.Parent = Box
+
+Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(1, 0)
+
+-- Progress
+local Bar = Instance.new("Frame")
+Bar.Size = UDim2.new(0, 0, 1, 0)
+Bar.BackgroundColor3 = Color3.fromRGB(130, 70, 255)
+Bar.BorderSizePixel = 0
+Bar.Parent = BarBackground
+
+Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 180)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 70, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 180, 255))
+})
+Gradient.Parent = Bar
+
+-- Persentase
+local Percent = Instance.new("TextLabel")
+Percent.Size = UDim2.new(1, 0, 0, 30)
+Percent.Position = UDim2.new(0, 0, 0, 175)
+Percent.BackgroundTransparency = 1
+Percent.Text = "0%"
+Percent.Font = Enum.Font.GothamBold
+Percent.TextSize = 18
+Percent.TextColor3 = Color3.fromRGB(235, 235, 255)
+Percent.Parent = Box
+
+--========================================--
+--           LOADING FUNCTION
+--========================================--
+
+local loadingTexts = {
+    "Memulai sistem...",
+    "Memuat Adam Ganteng Hub...",
+    "Menghubungkan ke server...",
+    "Menyiapkan Server Hop...",
+    "Mengambil data player...",
+    "Mencari konfigurasi...",
+    "Menyiapkan antarmuka...",
+    "Hampir selesai...",
+    "Sistem siap!"
+}
+
+for i = 0, 100 do
+
+    local progress = i / 100
+
+    Bar.Size = UDim2.new(progress, 0, 1, 0)
+    Percent.Text = i .. "%"
+
+    -- Ganti teks berdasarkan progress
+    if i < 10 then
+        Status.Text = loadingTexts[1]
+    elseif i < 25 then
+        Status.Text = loadingTexts[2]
+    elseif i < 40 then
+        Status.Text = loadingTexts[3]
+    elseif i < 55 then
+        Status.Text = loadingTexts[4]
+    elseif i < 70 then
+        Status.Text = loadingTexts[5]
+    elseif i < 82 then
+        Status.Text = loadingTexts[6]
+    elseif i < 92 then
+        Status.Text = loadingTexts[7]
+    elseif i < 100 then
+        Status.Text = loadingTexts[8]
+    else
+        Status.Text = loadingTexts[9]
+    end
+
+    task.wait(0.025)
+end
+
+task.wait(0.6)
+
+-- Animasi loading hilang
+TweenService:Create(
+    Box,
+    TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+    {
+        Size = UDim2.new(0, 0, 0, 0)
+    }
+):Play()
+
+TweenService:Create(
+    Background,
+    TweenInfo.new(0.4),
+    {
+        BackgroundTransparency = 1
+    }
+):Play()
+
+task.wait(0.45)
+
+LoadingGui:Destroy()
+
+--========================================--
+--===================================--
+--        ADAM GANTENG SERVER HOP
+--========================================----========================================--
+--        ADAM GANTENG LOADING SCREEN
+--========================================--
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+
+pcall(function()
+    CoreGui:FindFirstChild("AdamGantengLoading"):Destroy()
+end)
+
+local LoadingGui = Instance.new("ScreenGui")
+LoadingGui.Name = "AdamGantengLoading"
+LoadingGui.IgnoreGuiInset = true
+LoadingGui.ResetOnSpawn = false
+LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+LoadingGui.Parent = CoreGui
+
+-- Background gelap
+local Background = Instance.new("Frame")
+Background.Size = UDim2.fromScale(1, 1)
+Background.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
+Background.BorderSizePixel = 0
+Background.Parent = LoadingGui
+
+-- Kotak utama
+local Box = Instance.new("Frame")
+Box.Size = UDim2.new(0, 420, 0, 230)
+Box.Position = UDim2.new(0.5, -210, 0.5, -115)
+Box.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+Box.BorderSizePixel = 0
+Box.Parent = Background
+
+Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 18)
+
+local Stroke = Instance.new("UIStroke")
+Stroke.Color = Color3.fromRGB(120, 70, 255)
+Stroke.Thickness = 1.5
+Stroke.Transparency = 0.25
+Stroke.Parent = Box
+
+-- Judul
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Position = UDim2.new(0, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.Text = "ADAM GANTENG"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 27
+Title.TextColor3 = Color3.fromRGB(245, 245, 255)
+Title.Parent = Box
+
+-- Subtitle
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Size = UDim2.new(1, 0, 0, 25)
+Subtitle.Position = UDim2.new(0, 0, 0, 73)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Text = "SERVER HOP • SAEG"
+Subtitle.Font = Enum.Font.GothamMedium
+Subtitle.TextSize = 12
+Subtitle.TextColor3 = Color3.fromRGB(155, 120, 255)
+Subtitle.Parent = Box
+
+-- Status loading
+local Status = Instance.new("TextLabel")
+Status.Size = UDim2.new(1, -60, 0, 25)
+Status.Position = UDim2.new(0, 30, 0, 115)
+Status.BackgroundTransparency = 1
+Status.Text = "Memulai sistem..."
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 13
+Status.TextColor3 = Color3.fromRGB(180, 180, 195)
+Status.TextXAlignment = Enum.TextXAlignment.Left
+Status.Parent = Box
+
+-- Progress background
+local BarBackground = Instance.new("Frame")
+BarBackground.Size = UDim2.new(1, -60, 0, 12)
+BarBackground.Position = UDim2.new(0, 30, 0, 148)
+BarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+BarBackground.BorderSizePixel = 0
+BarBackground.Parent = Box
+
+Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(1, 0)
+
+-- Progress
+local Bar = Instance.new("Frame")
+Bar.Size = UDim2.new(0, 0, 1, 0)
+Bar.BackgroundColor3 = Color3.fromRGB(130, 70, 255)
+Bar.BorderSizePixel = 0
+Bar.Parent = BarBackground
+
+Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
+
+local Gradient = Instance.new("UIGradient")
+Gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 180)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 70, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 180, 255))
+})
+Gradient.Parent = Bar
+
+-- Persentase
+local Percent = Instance.new("TextLabel")
+Percent.Size = UDim2.new(1, 0, 0, 30)
+Percent.Position = UDim2.new(0, 0, 0, 175)
+Percent.BackgroundTransparency = 1
+Percent.Text = "0%"
+Percent.Font = Enum.Font.GothamBold
+Percent.TextSize = 18
+Percent.TextColor3 = Color3.fromRGB(235, 235, 255)
+Percent.Parent = Box
+
+--========================================--
+--           LOADING FUNCTION
+--========================================--
+
+local loadingTexts = {
+    "Memulai sistem...",
+    "Memuat Adam Ganteng Hub...",
+    "Menghubungkan ke server...",
+    "Menyiapkan Server Hop...",
+    "Mengambil data player...",
+    "Mencari konfigurasi...",
+    "Menyiapkan antarmuka...",
+    "Hampir selesai...",
+    "Sistem siap!"
+}
+
+for i = 0, 100 do
+
+    local progress = i / 100
+
+    Bar.Size = UDim2.new(progress, 0, 1, 0)
+    Percent.Text = i .. "%"
+
+    -- Ganti teks berdasarkan progress
+    if i < 10 then
+        Status.Text = loadingTexts[1]
+    elseif i < 25 then
+        Status.Text = loadingTexts[2]
+    elseif i < 40 then
+        Status.Text = loadingTexts[3]
+    elseif i < 55 then
+        Status.Text = loadingTexts[4]
+    elseif i < 70 then
+        Status.Text = loadingTexts[5]
+    elseif i < 82 then
+        Status.Text = loadingTexts[6]
+    elseif i < 92 then
+        Status.Text = loadingTexts[7]
+    elseif i < 100 then
+        Status.Text = loadingTexts[8]
+    else
+        Status.Text = loadingTexts[9]
+    end
+
+    task.wait(0.025)
+end
+
+task.wait(0.6)
+
+-- Animasi loading hilang
+TweenService:Create(
+    Box,
+    TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+    {
+        Size = UDim2.new(0, 0, 0, 0)
+    }
+):Play()
+
+TweenService:Create(
+    Background,
+    TweenInfo.new(0.4),
+    {
+        BackgroundTransparency = 1
+    }
+):Play()
+
+task.wait(0.45)
+
+LoadingGui:Destroy()
+
+--========================================--
+----------------------------------
+--        ADAM GANTENG SERVER HOP
+--========================================--╔══════════════════════════════════════╗
     ║       ADAM GANTENG SERVER HOP        ║
     ║               SAEG                   ║
     ╚══════════════════════════════════════╝
@@ -299,402 +672,4 @@ Instance.new("UICorner", ProgressBack).CornerRadius = UDim.new(1, 0)
 
 local Progress = Instance.new("Frame")
 Progress.Size = UDim2.new(0, 0, 1, 0)
-Progress.BackgroundColor3 = Color3.fromRGB(130, 80, 255)
-Progress.BorderSizePixel = 0
-Progress.Parent = ProgressBack
-
-Instance.new("UICorner", Progress).CornerRadius = UDim.new(1, 0)
-
-local ProgressGradient = Instance.new("UIGradient")
-ProgressGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 75, 190)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 80, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(65, 180, 255))
-})
-ProgressGradient.Parent = Progress
-
---====================================================
--- BUTTONS
---====================================================
-
-local HopButton = Instance.new("TextButton")
-HopButton.Size = UDim2.new(0.5, -5, 0, 60)
-HopButton.Position = UDim2.new(0, 0, 0, 220)
-HopButton.BackgroundColor3 = Color3.fromRGB(105, 65, 230)
-HopButton.BorderSizePixel = 0
-HopButton.Text = "HOP SEKALI"
-HopButton.Font = Enum.Font.GothamBold
-HopButton.TextSize = 14
-HopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-HopButton.Parent = Content
-
-Instance.new("UICorner", HopButton).CornerRadius = UDim.new(0, 12)
-
-local HopGradient = Instance.new("UIGradient")
-HopGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(95, 60, 210)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 70, 255))
-})
-HopGradient.Parent = HopButton
-
-local AutoButton = Instance.new("TextButton")
-AutoButton.Size = UDim2.new(0.5, -5, 0, 60)
-AutoButton.Position = UDim2.new(0.5, 5, 0, 220)
-AutoButton.BackgroundColor3 = Color3.fromRGB(28, 48, 42)
-AutoButton.BorderSizePixel = 0
-AutoButton.Text = "AUTO HOP  •  OFF"
-AutoButton.Font = Enum.Font.GothamBold
-AutoButton.TextSize = 13
-AutoButton.TextColor3 = Color3.fromRGB(180, 190, 190)
-AutoButton.Parent = Content
-
-Instance.new("UICorner", AutoButton).CornerRadius = UDim.new(0, 12)
-
-local AutoStroke = Instance.new("UIStroke")
-AutoStroke.Color = Color3.fromRGB(55, 90, 75)
-AutoStroke.Thickness = 1
-AutoStroke.Parent = AutoButton
-
---====================================================
--- FOOTER
---====================================================
-
-local Footer = Instance.new("TextLabel")
-Footer.Size = UDim2.new(1, 0, 0, 20)
-Footer.Position = UDim2.new(0, 0, 1, -20)
-Footer.BackgroundTransparency = 1
-Footer.Text = "ADAM GANTENG • PUBLIC SERVER FINDER"
-Footer.Font = Enum.Font.GothamMedium
-Footer.TextSize = 9
-Footer.TextColor3 = Color3.fromRGB(85, 85, 105)
-Footer.TextXAlignment = Enum.TextXAlignment.Center
-Footer.Parent = Content
-
---====================================================
--- HELPER FUNCTIONS
---====================================================
-
-local function GetLimit()
-    local number = tonumber(Input.Text)
-
-    if not number then
-        number = 2
-    end
-
-    number = math.floor(number)
-
-    if number < 1 then
-        number = 1
-    end
-
-    return number
-end
-
-local function UpdatePlayerCount()
-    local amount = #Players:GetPlayers()
-
-    PlayerCount.Text = amount .. " PLAYER"
-
-    if amount == 1 then
-        PlayerCount.Text = "1 PLAYER • SEPI"
-        Dot.BackgroundColor3 = Color3.fromRGB(80, 255, 150)
-    elseif amount <= 3 then
-        PlayerCount.Text = amount .. " PLAYER • CUKUP SEPI"
-        Dot.BackgroundColor3 = Color3.fromRGB(130, 220, 100)
-    else
-        PlayerCount.Text = amount .. " PLAYER"
-        Dot.BackgroundColor3 = Color3.fromRGB(255, 190, 70)
-    end
-end
-
-local function SetStatus(text, color)
-    Status.Text = "●  " .. string.upper(text)
-    Status.TextColor3 = color or Color3.fromRGB(120, 190, 255)
-end
-
-local function SetProgress(value, duration)
-    TweenService:Create(
-        Progress,
-        TweenInfo.new(duration or 0.3, Enum.EasingStyle.Quint),
-        {
-            Size = UDim2.new(value, 0, 1, 0)
-        }
-    ):Play()
-end
-
---====================================================
--- SERVER HOP
---====================================================
-
-local function FindQuietServer()
-    if Searching then
-        return false
-    end
-
-    Searching = true
-
-    HopButton.Text = "MENCARI..."
-    SetStatus("Sedang mengambil daftar server", Color3.fromRGB(130, 180, 255))
-
-    SetProgress(0.08, 0.2)
-
-    local cursor = nil
-    local visited = {}
-    local maxPages = 8
-
-    local successTeleport = false
-
-    for page = 1, maxPages do
-
-        if not Searching then
-            break
-        end
-
-        SetStatus(
-            "Scanning server • halaman " .. page,
-            Color3.fromRGB(150, 130, 255)
-        )
-
-        SetProgress(page / maxPages, 0.35)
-
-        local url =
-            "https://games.roblox.com/v1/games/"
-            .. PlaceId
-            .. "/servers/Public?sortOrder=Asc&limit=100"
-
-        if cursor then
-            url = url .. "&cursor=" .. HttpService:UrlEncode(cursor)
-        end
-
-        local ok, response = pcall(function()
-            return HttpService:JSONDecode(game:HttpGet(url))
-        end)
-
-        if ok and response and response.data then
-
-            local limit = GetLimit()
-
-            for _, server in ipairs(response.data) do
-
-                if server.id ~= CurrentJobId
-                    and server.playing <= limit
-                    and server.playing < server.maxPlayers
-                    and not visited[server.id]
-                then
-
-                    visited[server.id] = true
-
-                    SetProgress(1, 0.25)
-
-                    SetStatus(
-                        "Ditemukan! " ..
-                        server.playing ..
-                        " player • teleporting...",
-                        Color3.fromRGB(80, 255, 160)
-                    )
-
-                    HopButton.Text = "SERVER DITEMUKAN!"
-
-                    task.wait(0.7)
-
-                    local teleportOK = pcall(function()
-                        TeleportService:TeleportToPlaceInstance(
-                            PlaceId,
-                            server.id,
-                            LocalPlayer
-                        )
-                    end)
-
-                    if teleportOK then
-                        successTeleport = true
-                        break
-                    end
-                end
-            end
-
-            cursor = response.nextPageCursor
-
-            if not cursor then
-                break
-            end
-
-        else
-            SetStatus(
-                "Gagal mengambil daftar server",
-                Color3.fromRGB(255, 100, 120)
-            )
-            break
-        end
-
-        task.wait(0.35)
-    end
-
-    Searching = false
-
-    if not successTeleport then
-        SetProgress(0, 0.35)
-
-        if AutoHop then
-            SetStatus(
-                "Belum ketemu • mencoba lagi...",
-                Color3.fromRGB(255, 200, 90)
-            )
-        else
-            SetStatus(
-                "Server sesuai belum ditemukan",
-                Color3.fromRGB(255, 120, 120)
-            )
-        end
-
-        HopButton.Text = "HOP SEKALI"
-    end
-
-    return successTeleport
-end
-
---====================================================
--- BUTTON EFFECT
---====================================================
-
-local function ButtonEffect(button)
-    button.MouseButton1Down:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.1),
-            {Size = UDim2.new(
-                button.Size.X.Scale,
-                button.Size.X.Offset - 2,
-                button.Size.Y.Scale,
-                button.Size.Y.Offset - 2
-            )}
-        ):Play()
-    end)
-
-    button.MouseButton1Up:Connect(function()
-        TweenService:Create(
-            button,
-            TweenInfo.new(0.12),
-            {
-                Size = UDim2.new(
-                    button.Size.X.Scale,
-                    button.Size.X.Offset + 2,
-                    button.Size.Y.Scale,
-                    button.Size.Y.Offset + 2
-                )
-            }
-        ):Play()
-    end)
-end
-
---====================================================
--- HOP BUTTON
---====================================================
-
-HopButton.MouseButton1Click:Connect(function()
-    if not Searching then
-        FindQuietServer()
-    end
-end)
-
---====================================================
--- AUTO HOP
---====================================================
-
-AutoButton.MouseButton1Click:Connect(function()
-
-    AutoHop = not AutoHop
-
-    if AutoHop then
-
-        AutoButton.Text = "AUTO HOP  •  ON"
-        AutoButton.TextColor3 = Color3.fromRGB(130, 255, 180)
-
-        AutoButton.BackgroundColor3 =
-            Color3.fromRGB(25, 80, 55)
-
-        AutoStroke.Color =
-            Color3.fromRGB(60, 180, 110)
-
-        task.spawn(function()
-
-            while AutoHop and ScreenGui.Parent do
-
-                local limit = GetLimit()
-                local currentPlayers = #Players:GetPlayers()
-
-                if currentPlayers > limit then
-
-                    if not Searching then
-                        FindQuietServer()
-                    end
-
-                else
-
-                    SetStatus(
-                        "Server sudah cukup sepi • " ..
-                        currentPlayers ..
-                        " player",
-                        Color3.fromRGB(80, 255, 160)
-                    )
-
-                end
-
-                task.wait(3)
-
-            end
-
-        end)
-
-    else
-
-        AutoButton.Text = "AUTO HOP  •  OFF"
-        AutoButton.TextColor3 =
-            Color3.fromRGB(180, 190, 190)
-
-        AutoButton.BackgroundColor3 =
-            Color3.fromRGB(28, 48, 42)
-
-        AutoStroke.Color =
-            Color3.fromRGB(55, 90, 75)
-
-        SetStatus(
-            "Auto hop dimatikan",
-            Color3.fromRGB(160, 160, 180)
-        )
-    end
-end)
-
---====================================================
--- PLAYER UPDATE
---====================================================
-
-UpdatePlayerCount()
-
-Players.PlayerAdded:Connect(function()
-    task.wait(0.5)
-    UpdatePlayerCount()
-end)
-
-Players.PlayerRemoving:Connect(function()
-    task.wait(0.5)
-    UpdatePlayerCount()
-end)
-
---====================================================
--- MINIMIZE
---====================================================
-
-Minimize.MouseButton1Click:Connect(function()
-
-    Minimized = not Minimized
-
-    if Minimized then
-
-        Minimize.Text = "+"
-
-        TweenService:Create(
-            Main,
-            TweenInfo.new(
-                0.35,
-                Enum.EasingStyle.Quint,
-                Enu
+Progress.BackgroundColor3 = Color3.fromRGB(130, 80
