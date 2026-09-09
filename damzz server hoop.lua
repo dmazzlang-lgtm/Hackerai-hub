@@ -1,568 +1,264 @@
---========================================--
---        ADAM GANTENG LOADING SCREEN
---        + SERVER HOP (SAEG)
---========================================--
-
 local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
-local CurrentJobId = game.JobId
 
---========================================--
---        HAPUS GUI LAMA
---========================================--
-pcall(function()
-    CoreGui:FindFirstChild("AdamGantengLoading"):Destroy()
-    CoreGui:FindFirstChild("AdamGantengServerHop"):Destroy()
-end)
+-- GUI Creation
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "PrivateServerFinder"
+ScreenGui.ResetOnSpawn = false
 
---========================================--
---        LOADING SCREEN
---========================================--
-local function ShowLoadingScreen()
-    local LoadingGui = Instance.new("ScreenGui")
-    LoadingGui.Name = "AdamGantengLoading"
-    LoadingGui.IgnoreGuiInset = true
-    LoadingGui.ResetOnSpawn = false
-    LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    LoadingGui.Parent = CoreGui
-
-    -- Background gelap
-    local Background = Instance.new("Frame")
-    Background.Size = UDim2.fromScale(1, 1)
-    Background.BackgroundColor3 = Color3.fromRGB(8, 8, 14)
-    Background.BorderSizePixel = 0
-    Background.Parent = LoadingGui
-
-    -- Kotak utama
-    local Box = Instance.new("Frame")
-    Box.Size = UDim2.new(0, 420, 0, 230)
-    Box.Position = UDim2.new(0.5, -210, 0.5, -115)
-    Box.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
-    Box.BorderSizePixel = 0
-    Box.Parent = Background
-
-    Instance.new("UICorner", Box).CornerRadius = UDim.new(0, 18)
-
-    local Stroke = Instance.new("UIStroke")
-    Stroke.Color = Color3.fromRGB(120, 70, 255)
-    Stroke.Thickness = 1.5
-    Stroke.Transparency = 0.25
-    Stroke.Parent = Box
-
-    -- Judul
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, 0, 0, 45)
-    Title.Position = UDim2.new(0, 0, 0, 30)
-    Title.BackgroundTransparency = 1
-    Title.Text = "ADAM GANTENG"
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 27
-    Title.TextColor3 = Color3.fromRGB(245, 245, 255)
-    Title.Parent = Box
-
-    -- Subtitle
-    local Subtitle = Instance.new("TextLabel")
-    Subtitle.Size = UDim2.new(1, 0, 0, 25)
-    Subtitle.Position = UDim2.new(0, 0, 0, 73)
-    Subtitle.BackgroundTransparency = 1
-    Subtitle.Text = "SERVER HOP • SAEG"
-    Subtitle.Font = Enum.Font.GothamMedium
-    Subtitle.TextSize = 12
-    Subtitle.TextColor3 = Color3.fromRGB(155, 120, 255)
-    Subtitle.Parent = Box
-
-    -- Status loading
-    local Status = Instance.new("TextLabel")
-    Status.Size = UDim2.new(1, -60, 0, 25)
-    Status.Position = UDim2.new(0, 30, 0, 115)
-    Status.BackgroundTransparency = 1
-    Status.Text = "Memulai sistem..."
-    Status.Font = Enum.Font.Gotham
-    Status.TextSize = 13
-    Status.TextColor3 = Color3.fromRGB(180, 180, 195)
-    Status.TextXAlignment = Enum.TextXAlignment.Left
-    Status.Parent = Box
-
-    -- Progress background
-    local BarBackground = Instance.new("Frame")
-    BarBackground.Size = UDim2.new(1, -60, 0, 12)
-    BarBackground.Position = UDim2.new(0, 30, 0, 148)
-    BarBackground.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
-    BarBackground.BorderSizePixel = 0
-    BarBackground.Parent = Box
-
-    Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(1, 0)
-
-    -- Progress
-    local Bar = Instance.new("Frame")
-    Bar.Size = UDim2.new(0, 0, 1, 0)
-    Bar.BackgroundColor3 = Color3.fromRGB(130, 70, 255)
-    Bar.BorderSizePixel = 0
-    Bar.Parent = BarBackground
-
-    Instance.new("UICorner", Bar).CornerRadius = UDim.new(1, 0)
-
-    local Gradient = Instance.new("UIGradient")
-    Gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 180)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 70, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 180, 255))
-    })
-    Gradient.Parent = Bar
-
-    -- Persentase
-    local Percent = Instance.new("TextLabel")
-    Percent.Size = UDim2.new(1, 0, 0, 30)
-    Percent.Position = UDim2.new(0, 0, 0, 175)
-    Percent.BackgroundTransparency = 1
-    Percent.Text = "0%"
-    Percent.Font = Enum.Font.GothamBold
-    Percent.TextSize = 18
-    Percent.TextColor3 = Color3.fromRGB(235, 235, 255)
-    Percent.Parent = Box
-
-    --========================================--
-    --           PROGRESS LOOP
-    --========================================--
-    local loadingTexts = {
-        "Memulai sistem...",
-        "Memuat Adam Ganteng Hub...",
-        "Menghubungkan ke server...",
-        "Menyiapkan Server Hop...",
-        "Mengambil data player...",
-        "Mencari konfigurasi...",
-        "Menyiapkan antarmuka...",
-        "Hampir selesai...",
-        "Sistem siap!"
-    }
-
-    for i = 0, 100 do
-        local progress = i / 100
-        Bar.Size = UDim2.new(progress, 0, 1, 0)
-        Percent.Text = i .. "%"
-
-        if i < 10 then
-            Status.Text = loadingTexts[1]
-        elseif i < 25 then
-            Status.Text = loadingTexts[2]
-        elseif i < 40 then
-            Status.Text = loadingTexts[3]
-        elseif i < 55 then
-            Status.Text = loadingTexts[4]
-        elseif i < 70 then
-            Status.Text = loadingTexts[5]
-        elseif i < 82 then
-            Status.Text = loadingTexts[6]
-        elseif i < 92 then
-            Status.Text = loadingTexts[7]
-        elseif i < 100 then
-            Status.Text = loadingTexts[8]
-        else
-            Status.Text = loadingTexts[9]
-        end
-
-        task.wait(0.025)
-    end
-
-    task.wait(0.6)
-
-    -- Animasi loading hilang
-    TweenService:Create(
-        Box,
-        TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In),
-        {
-            Size = UDim2.new(0, 0, 0, 0)
-        }
-    ):Play()
-
-    TweenService:Create(
-        Background,
-        TweenInfo.new(0.4),
-        {
-            BackgroundTransparency = 1
-        }
-    ):Play()
-
-    task.wait(0.45)
-    LoadingGui:Destroy()
-
-    -- Setelah loading selesai, tampilkan GUI Server Hop
-    CreateServerHopGUI()
+if syn and syn.protect_gui then
+    syn.protect_gui(ScreenGui)
+    ScreenGui.Parent = game.CoreGui
+elseif gethui then
+    ScreenGui.Parent = gethui()
+else
+    ScreenGui.Parent = game.CoreGui
 end
 
---========================================--
---        SERVER HOP GUI
---========================================--
-local function CreateServerHopGUI()
-    --====================================================
-    -- VARIABLES
-    --====================================================
-    local AutoHop = false
-    local Searching = false
-    local Minimized = false
+-- Main Window (Dark Neon Glass Style)
+local MainFrame = Instance.new("Frame")
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 12, 25)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.5, -130, 0.5, -120)
+MainFrame.Size = UDim2.new(0, 260, 0, 240)
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
-    --====================================================
-    -- GUI
-    --====================================================
-    local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AdamGantengServerHop"
-    ScreenGui.ResetOnSpawn = false
-    ScreenGui.IgnoreGuiInset = true
-    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    ScreenGui.Parent = CoreGui
+local UIStroke = Instance.new("UIStroke", MainFrame)
+UIStroke.Color = Color3.fromRGB(60, 50, 90)
+UIStroke.Thickness = 1.5
 
-    --====================================================
-    -- MAIN
-    --====================================================
-    local Main = Instance.new("Frame")
-    Main.Name = "Main"
-    Main.Size = UDim2.new(0, 460, 0, 385)
-    Main.Position = UDim2.new(0.5, -230, 0.5, -192)
-    Main.BackgroundColor3 = Color3.fromRGB(13, 13, 20)
-    Main.BorderSizePixel = 0
-    Main.ClipsDescendants = true
-    Main.Parent = ScreenGui
+-- Header
+local Title = Instance.new("TextLabel", MainFrame)
+Title.Position = UDim2.new(0, 15, 0, 12)
+Title.Size = UDim2.new(0, 180, 0, 18)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.FredokaOne
+Title.Text = "PRIVATE SERVER FINDER"
+Title.TextColor3 = Color3.fromRGB(0, 230, 255)
+Title.TextSize = 13
+Title.TextXAlignment = Enum.TextXAlignment.Left
 
-    local MainCorner = Instance.new("UICorner")
-    MainCorner.CornerRadius = UDim.new(0, 16)
-    MainCorner.Parent = Main
+local Subtitle = Instance.new("TextLabel", MainFrame)
+Subtitle.Position = UDim2.new(0, 15, 0, 30)
+Subtitle.Size = UDim2.new(0, 180, 0, 14)
+Subtitle.BackgroundTransparency = 1
+Subtitle.Font = Enum.Font.GothamMedium
+Subtitle.Text = "by GlazeOnTop"
+Subtitle.TextColor3 = Color3.fromRGB(120, 120, 150)
+Subtitle.TextSize = 10
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
 
-    local MainStroke = Instance.new("UIStroke")
-    MainStroke.Color = Color3.fromRGB(110, 70, 255)
-    MainStroke.Thickness = 1.5
-    MainStroke.Transparency = 0.2
-    MainStroke.Parent = Main
+-- Close Button
+local CloseBtn = Instance.new("TextButton", MainFrame)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+CloseBtn.Position = UDim2.new(1, -32, 0, 12)
+CloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = Color3.fromRGB(200, 200, 220)
+CloseBtn.TextSize = 11
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-    --====================================================
-    -- TOP GLOW
-    --====================================================
-    local Glow = Instance.new("Frame")
-    Glow.Size = UDim2.new(1, 0, 0, 5)
-    Glow.BackgroundColor3 = Color3.fromRGB(135, 80, 255)
-    Glow.BorderSizePixel = 0
-    Glow.Parent = Main
+-- Status Card
+local StatusCard = Instance.new("Frame", MainFrame)
+StatusCard.Position = UDim2.new(0, 15, 0, 52)
+StatusCard.Size = UDim2.new(1, -30, 0, 50)
+StatusCard.BackgroundColor3 = Color3.fromRGB(24, 20, 40)
+StatusCard.BorderSizePixel = 0
+Instance.new("UICorner", StatusCard).CornerRadius = UDim.new(0, 8)
 
-    local GlowGradient = Instance.new("UIGradient")
-    GlowGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 180)),
-        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(130, 70, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(60, 180, 255))
-    })
-    GlowGradient.Parent = Glow
+local NowLabel = Instance.new("TextLabel", StatusCard)
+NowLabel.Position = UDim2.new(0, 10, 0, 6)
+NowLabel.Size = UDim2.new(1, -20, 0, 18)
+NowLabel.BackgroundTransparency = 1
+NowLabel.Font = Enum.Font.GothamBold
+NowLabel.TextXAlignment = Enum.TextXAlignment.Left
+NowLabel.TextColor3 = Color3.fromRGB(0, 230, 255)
+NowLabel.TextSize = 12
 
-    --====================================================
-    -- HEADER
-    --====================================================
-    local Header = Instance.new("Frame")
-    Header.Size = UDim2.new(1, 0, 0, 78)
-    Header.BackgroundTransparency = 1
-    Header.Parent = Main
+local StatusLabel = Instance.new("TextLabel", StatusCard)
+StatusLabel.Position = UDim2.new(0, 10, 0, 24)
+StatusLabel.Size = UDim2.new(1, -20, 0, 22)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
+StatusLabel.TextSize = 10
+StatusLabel.TextWrapped = true
 
-    local Title = Instance.new("TextLabel")
-    Title.Size = UDim2.new(1, -120, 0, 30)
-    Title.Position = UDim2.new(0, 22, 0, 14)
-    Title.BackgroundTransparency = 1
-    Title.Text = "ADAM GANTENG"
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 22
-    Title.TextColor3 = Color3.fromRGB(245, 245, 255)
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-    Title.Parent = Header
+-- Input Field
+local MaxBox = Instance.new("TextBox", MainFrame)
+MaxBox.Position = UDim2.new(0, 15, 0, 110)
+MaxBox.Size = UDim2.new(1, -30, 0, 32)
+MaxBox.BackgroundColor3 = Color3.fromRGB(24, 20, 40)
+MaxBox.BorderSizePixel = 0
+MaxBox.Font = Enum.Font.GothamBold
+MaxBox.Text = "1"
+MaxBox.PlaceholderText = "Max Players Allowed"
+MaxBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+MaxBox.TextSize = 13
+MaxBox.ClearTextOnFocus = false
+Instance.new("UICorner", MaxBox).CornerRadius = UDim.new(0, 8)
 
-    local Subtitle = Instance.new("TextLabel")
-    Subtitle.Size = UDim2.new(1, -120, 0, 22)
-    Subtitle.Position = UDim2.new(0, 23, 0, 43)
-    Subtitle.BackgroundTransparency = 1
-    Subtitle.Text = "SERVER HOP • SAEG"
-    Subtitle.Font = Enum.Font.GothamMedium
-    Subtitle.TextSize = 11
-    Subtitle.TextColor3 = Color3.fromRGB(145, 125, 220)
-    Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-    Subtitle.Parent = Header
+-- Action Buttons (Stacked Layout)
+local JoinBtn = Instance.new("TextButton", MainFrame)
+JoinBtn.Position = UDim2.new(0, 15, 0, 150)
+JoinBtn.Size = UDim2.new(1, -30, 0, 34)
+JoinBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+JoinBtn.BorderSizePixel = 0
+JoinBtn.Font = Enum.Font.GothamBold
+JoinBtn.Text = "HOP SERVER NOW"
+JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+JoinBtn.TextSize = 11
+Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 8)
 
-    -- MINIMIZE
-    local Minimize = Instance.new("TextButton")
-    Minimize.Size = UDim2.new(0, 32, 0, 32)
-    Minimize.Position = UDim2.new(1, -76, 0, 18)
-    Minimize.BackgroundColor3 = Color3.fromRGB(32, 32, 48)
-    Minimize.Text = "−"
-    Minimize.Font = Enum.Font.GothamBold
-    Minimize.TextSize = 20
-    Minimize.TextColor3 = Color3.fromRGB(220, 220, 230)
-    Minimize.BorderSizePixel = 0
-    Minimize.Parent = Header
+local AutoBtn = Instance.new("TextButton", MainFrame)
+AutoBtn.Position = UDim2.new(0, 15, 0, 190)
+AutoBtn.Size = UDim2.new(1, -30, 0, 34)
+AutoBtn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+AutoBtn.BorderSizePixel = 0
+AutoBtn.Font = Enum.Font.GothamBold
+AutoBtn.Text = "AUTO HOP: DISABLED"
+AutoBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+AutoBtn.TextSize = 11
+Instance.new("UICorner", AutoBtn).CornerRadius = UDim.new(0, 8)
 
-    Instance.new("UICorner", Minimize).CornerRadius = UDim.new(0, 8)
-
-    Minimize.MouseButton1Click:Connect(function()
-        Minimized = not Minimized
-        if Minimized then
-            Main.Size = UDim2.new(0, 460, 0, 78)
-            Minimize.Text = "+"
-        else
-            Main.Size = UDim2.new(0, 460, 0, 385)
-            Minimize.Text = "−"
-        end
+-- Hover Animations helper
+local function addHover(btn, normalColor, hoverColor)
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
     end)
-
-    -- CLOSE
-    local Close = Instance.new("TextButton")
-    Close.Size = UDim2.new(0, 32, 0, 32)
-    Close.Position = UDim2.new(1, -38, 0, 18)
-    Close.BackgroundColor3 = Color3.fromRGB(65, 30, 45)
-    Close.Text = "×"
-    Close.Font = Enum.Font.GothamBold
-    Close.TextSize = 22
-    Close.TextColor3 = Color3.fromRGB(255, 110, 140)
-    Close.BorderSizePixel = 0
-    Close.Parent = Header
-
-    Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 8)
-
-    Close.MouseButton1Click:Connect(function()
-        ScreenGui:Destroy()
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = normalColor}):Play()
     end)
+end
 
-    --====================================================
-    -- CONTENT HOLDER
-    --====================================================
-    local Content = Instance.new("Frame")
-    Content.Name = "Content"
-    Content.Size = UDim2.new(1, -40, 1, -95)
-    Content.Position = UDim2.new(0, 20, 0, 78)
-    Content.BackgroundTransparency = 1
-    Content.Parent = Main
+addHover(JoinBtn, Color3.fromRGB(0, 140, 255), Color3.fromRGB(30, 160, 255))
+addHover(CloseBtn, Color3.fromRGB(35, 30, 50), Color3.fromRGB(220, 50, 70))
 
-    --====================================================
-    -- STATUS CARD
-    --====================================================
-    local StatusCard = Instance.new("Frame")
-    StatusCard.Size = UDim2.new(1, 0, 0, 72)
-    StatusCard.BackgroundColor3 = Color3.fromRGB(23, 23, 35)
-    StatusCard.BorderSizePixel = 0
-    StatusCard.Parent = Content
+-- ==============================
+-- LOGIC
+-- ==============================
+local autoEnabled = false
+local autoThread = nil
 
-    Instance.new("UICorner", StatusCard).CornerRadius = UDim.new(0, 12)
-
-    local StatusStroke = Instance.new("UIStroke")
-    StatusStroke.Color = Color3.fromRGB(60, 55, 90)
-    StatusStroke.Thickness = 1
-    StatusStroke.Transparency = 0.3
-    StatusStroke.Parent = StatusCard
-
-    -- DOT
-    local DotHolder = Instance.new("Frame")
-    DotHolder.Size = UDim2.new(0, 42, 0, 42)
-    DotHolder.Position = UDim2.new(0, 14, 0.5, -21)
-    DotHolder.BackgroundColor3 = Color3.fromRGB(25, 75, 55)
-    DotHolder.BorderSizePixel = 0
-    DotHolder.Parent = StatusCard
-
-    Instance.new("UICorner", DotHolder).CornerRadius = UDim.new(1, 0)
-
-    local Dot = Instance.new("Frame")
-    Dot.Size = UDim2.new(0, 12, 0, 12)
-    Dot.Position = UDim2.new(0.5, -6, 0.5, -6)
-    Dot.BackgroundColor3 = Color3.fromRGB(75, 255, 145)
-    Dot.BorderSizePixel = 0
-    Dot.Parent = DotHolder
-
-    Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
-
-    local PlayerLabel = Instance.new("TextLabel")
-    PlayerLabel.Size = UDim2.new(1, -75, 0, 24)
-    PlayerLabel.Position = UDim2.new(0, 68, 0, 12)
-    PlayerLabel.BackgroundTransparency = 1
-    PlayerLabel.Text = "SERVER SEKARANG"
-    PlayerLabel.Font = Enum.Font.GothamBold
-    PlayerLabel.TextSize = 11
-    PlayerLabel.TextColor3 = Color3.fromRGB(135, 135, 155)
-    PlayerLabel.TextXAlignment = Enum.TextXAlignment.Left
-    PlayerLabel.Parent = StatusCard
-
-    local PlayerCount = Instance.new("TextLabel")
-    PlayerCount.Size = UDim2.new(1, -75, 0, 30)
-    PlayerCount.Position = UDim2.new(0, 68, 0, 31)
-    PlayerCount.BackgroundTransparency = 1
-    PlayerCount.Text = "0 PLAYER"
-    PlayerCount.Font = Enum.Font.GothamBold
-    PlayerCount.TextSize = 19
-    PlayerCount.TextColor3 = Color3.fromRGB(245, 245, 255)
-    PlayerCount.TextXAlignment = Enum.TextXAlignment.Left
-    PlayerCount.Parent = StatusCard
-
-    -- Update player count setiap 5 detik
-    local function UpdatePlayerCount()
+task.spawn(function()
+    while ScreenGui.Parent do
         local count = #Players:GetPlayers()
-        PlayerCount.Text = count .. " PLAYER"
+        NowLabel.Text = "Current Server: " .. count .. " player(s)"
+        task.wait(1)
     end
-    UpdatePlayerCount()
-    task.spawn(function()
-        while ScreenGui.Parent do
-            task.wait(5)
-            UpdatePlayerCount()
+end)
+
+local function getRandomServer()
+    local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+    local ok, raw = pcall(function() return game:HttpGet(url) end)
+    if not ok or not raw or raw == "" then return nil end
+
+    local ok2, data = pcall(HttpService.JSONDecode, HttpService, raw)
+    if not ok2 or not data or not data.data or #data.data == 0 then return nil end
+
+    local currentId = tostring(game.JobId)
+    local candidates = {}
+    for _, s in ipairs(data.data) do
+        if s.id and tostring(s.id) ~= currentId then
+            table.insert(candidates, tostring(s.id))
         end
+    end
+
+    if #candidates == 0 then return nil end
+    return candidates[math.random(1, #candidates)]
+end
+
+local function joinOnce()
+    local threshold = math.max(1, math.floor(tonumber(MaxBox.Text) or 1))
+    local currentCount = #Players:GetPlayers()
+
+    if currentCount <= threshold then
+        StatusLabel.Text = "Server matches target (" .. currentCount .. " <= " .. threshold .. ")"
+        StatusLabel.TextColor3 = Color3.fromRGB(0, 230, 150)
+        return false
+    end
+
+    StatusLabel.Text = "Searching for lower player server..."
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 180, 50)
+    task.wait(0.5)
+
+    local serverId = getRandomServer()
+    if not serverId then
+        StatusLabel.Text = "HTTP fetch failed. Check executor."
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+        return false
+    end
+
+    StatusLabel.Text = "Teleporting..."
+    StatusLabel.TextColor3 = Color3.fromRGB(0, 230, 255)
+    task.wait(0.5)
+
+    local ok, err = pcall(function()
+        TeleportService:TeleportToPlaceInstance(PlaceId, serverId, LocalPlayer)
     end)
 
-    --====================================================
-    -- INPUT SECTION
-    --====================================================
-    local InputLabel = Instance.new("TextLabel")
-    InputLabel.Size = UDim2.new(1, 0, 0, 26)
-    InputLabel.Position = UDim2.new(0, 0, 0, 87)
-    InputLabel.BackgroundTransparency = 1
-    InputLabel.Text = "HOP JIKA PLAYER DI SERVER INI LEBIH DARI"
-    InputLabel.Font = Enum.Font.GothamBold
-    InputLabel.TextSize = 10
-    InputLabel.TextColor3 = Color3.fromRGB(155, 150, 180)
-    InputLabel.TextXAlignment = Enum.TextXAlignment.Left
-    InputLabel.Parent = Content
+    if not ok then
+        StatusLabel.Text = "Teleport error!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 80, 80)
+        return false
+    end
 
-    local InputHolder = Instance.new("Frame")
-    InputHolder.Size = UDim2.new(1, 0, 0, 52)
-    InputHolder.Position = UDim2.new(0, 0, 0, 113)
-    InputHolder.BackgroundColor3 = Color3.fromRGB(28, 28, 42)
-    InputHolder.BorderSizePixel = 0
-    InputHolder.Parent = Content
+    return true
+end
 
-    Instance.new("UICorner", InputHolder).CornerRadius = UDim.new(0, 10)
+JoinBtn.MouseButton1Click:Connect(function()
+    JoinBtn.Active = false
+    joinOnce()
+    task.wait(2)
+    JoinBtn.Active = true
+end)
 
-    local InputStroke = Instance.new("UIStroke")
-    InputStroke.Color = Color3.fromRGB(75, 65, 115)
-    InputStroke.Thickness = 1
-    InputStroke.Transparency = 0.25
-    InputStroke.Parent = InputHolder
+AutoBtn.MouseButton1Click:Connect(function()
+    autoEnabled = not autoEnabled
 
-    local Hash = Instance.new("TextLabel")
-    Hash.Size = UDim2.new(0, 50, 1, 0)
-    Hash.BackgroundTransparency = 1
-    Hash.Text = "#"
-    Hash.Font = Enum.Font.GothamBold
-    Hash.TextSize = 20
-    Hash.TextColor3 = Color3.fromRGB(135, 100, 255)
-    Hash.Parent = InputHolder
+    if autoEnabled then
+        AutoBtn.Text = "AUTO HOP: ENABLED"
+        AutoBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
+        AutoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 
-    local Input = Instance.new("TextBox")
-    Input.Size = UDim2.new(1, -65, 1, 0)
-    Input.Position = UDim2.new(0, 55, 0, 0)
-    Input.BackgroundTransparency = 1
-    Input.Text = "2"
-    Input.PlaceholderText = "Masukkan jumlah player..."
-    Input.Font = Enum.Font.GothamBold
-    Input.TextSize = 18
-    Input.TextColor3 = Color3.fromRGB(245, 245, 255)
-    Input.PlaceholderColor3 = Color3.fromRGB(100, 100, 120)
-    Input.TextXAlignment = Enum.TextXAlignment.Left
-    Input.ClearTextOnFocus = false
-    Input.Parent = InputHolder
+        autoThread = task.spawn(function()
+            while autoEnabled and ScreenGui.Parent do
+                local threshold = math.max(1, math.floor(tonumber(MaxBox.Text) or 1))
+                local count = #Players:GetPlayers()
 
-    --====================================================
-    -- BUTTON HOP
-    --====================================================
-    local HopButton = Instance.new("TextButton")
-    HopButton.Size = UDim2.new(1, 0, 0, 48)
-    HopButton.Position = UDim2.new(0, 0, 0, 210)
-    HopButton.BackgroundColor3 = Color3.fromRGB(110, 70, 255)
-    HopButton.Text = "MULAI HOP"
-    HopButton.Font = Enum.Font.GothamBold
-    HopButton.TextSize = 16
-    HopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    HopButton.BorderSizePixel = 0
-    HopButton.Parent = Content
-
-    Instance.new("UICorner", HopButton).CornerRadius = UDim.new(0, 10)
-
-    --====================================================
-    -- STATUS TEXT
-    --====================================================
-    local Status = Instance.new("TextLabel")
-    Status.Size = UDim2.new(1, 0, 0, 25)
-    Status.Position = UDim2.new(0, 0, 0, 265)
-    Status.BackgroundTransparency = 1
-    Status.Text = "●  SIAP UNTUK MENCARI SERVER"
-    Status.Font = Enum.Font.GothamMedium
-    Status.TextSize = 11
-    Status.TextColor3 = Color3.fromRGB(120, 190, 255)
-    Status.TextXAlignment = Enum.TextXAlignment.Left
-    Status.Parent = Content
-
-    --====================================================
-    -- PROGRESS BAR
-    --====================================================
-    local ProgressBack = Instance.new("Frame")
-    ProgressBack.Size = UDim2.new(1, 0, 0, 4)
-    ProgressBack.Position = UDim2.new(0, 0, 0, 293)
-    ProgressBack.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
-    ProgressBack.BorderSizePixel = 0
-    ProgressBack.Parent = Content
-
-    Instance.new("UICorner", ProgressBack).CornerRadius = UDim.new(1, 0)
-
-    local Progress = Instance.new("Frame")
-    Progress.Size = UDim2.new(0, 0, 1, 0)
-    Progress.BackgroundColor3 = Color3.fromRGB(130, 80, 255)
-    Progress.BorderSizePixel = 0
-    Progress.Parent = ProgressBack
-
-    Instance.new("UICorner", Progress).CornerRadius = UDim.new(1, 0)
-
-    --====================================================
-    -- FUNCTION: SERVER HOP
-    --====================================================
-    local function HopServer()
-        if Searching then return end
-        Searching = true
-        Status.Text = "⏳  MENCARI SERVER..."
-        Status.TextColor3 = Color3.fromRGB(255, 200, 100)
-        HopButton.Text = "MENCARI..."
-        HopButton.BackgroundColor3 = Color3.fromRGB(80, 60, 180)
-
-        local targetPlayer = tonumber(Input.Text)
-        if not targetPlayer or targetPlayer < 1 then
-            targetPlayer = 2
-            Input.Text = "2"
+                if count <= threshold then
+                    StatusLabel.Text = "Optimal server. Waiting..."
+                    StatusLabel.TextColor3 = Color3.fromRGB(0, 230, 150)
+                    task.wait(3)
+                else
+                    joinOnce()
+                    task.wait(5)
+                end
+            end
+        end)
+    else
+        AutoBtn.Text = "AUTO HOP: DISABLED"
+        AutoBtn.BackgroundColor3 = Color3.fromRGB(35, 30, 50)
+        AutoBtn.TextColor3 = Color3.fromRGB(180, 180, 200)
+        if autoThread then
+            task.cancel(autoThread)
+            autoThread = nil
         end
+        StatusLabel.Text = "Auto hop stopped."
+        StatusLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
+    end
+end)
 
-        -- Progress bar animasi
-        for i = 0, 100, 5 do
-            Progress.Size = UDim2.new(i / 100, 0, 1, 0)
-            task.wait(0.05)
-            if not Searching then break end
-        end
-
-        -- Cek apakah server saat ini sudah di bawah target
-        local currentCount = #Players:GetPlayers()
-        if currentCount <= targetPlayer then
-            Status.Text = "✅  SERVER SUDAH DI BAWAH BATAS, TIDAK PERLU HOP"
-            Status.TextColor3 = Color3.fromRGB(120, 255, 180)
-            HopButton.Text = "MULAI HOP"
-            HopButton.BackgroundColor3 = Color3.fromRGB(110, 70, 255)
-            Searching = false
-            Progress.Size = UDim2.new(1, 0, 1, 0)
-            task.wait(1)
-            Progress.Size = UDim2.new(0, 0, 1, 0)
-            return
-        end
-
-        -- Coba hop
-        local success, result = pcall(function()
-            local servers = HttpService:GetAsync("https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?limit=100")
-            local data = HttpService:JSONDecode(servers)
-            local found = false
-
-            for _, server in ipairs(data.data) do
-                if server.id ~= CurrentJobId then
-                    local playerCount = server.playing
-                    if playerCount <= targetPlayer then
-                        found = true
-                        Status.Text = "🔄  HOP KE SERVER DENGAN " .. playerCount .. " PLAYER..."
-                        Status.TextColor3 = Color3.fromRGB(255, 200, 100)
-                        TeleportService:TeleportToPlaceInstance(PlaceId, server.id
+StatusLabel.Text = "Set max threshold & click Hop."
